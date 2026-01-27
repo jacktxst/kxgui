@@ -1,7 +1,7 @@
 # kxgui
 cross platform, any graphical backend, immediate mode gui c header library
 
-kxgui is an immediate mode gui library inspired by libraries like [clay](https://github.com/nicbarker/clay) and [dear imgui[(https://github.com/ocornut/imgui).
+kxgui is an immediate mode gui library inspired by libraries like [clay](https://github.com/nicbarker/clay) and [dear imgui](https://github.com/ocornut/imgui).
 when using an immediate mode library, your loop needs to call functions for drawing components every frame.
 
 ```
