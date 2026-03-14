@@ -1,8 +1,17 @@
 # kxgui
 cross platform, any graphical backend, immediate mode gui c header library
 
+
+kxgui is a C library for adding GUIs to any application on any platform.
+kxgui itself relies on no libraries or graphics api. to actually get the
+frame that kxgui produces to show up on the screen, a renderer function
+is required in order to translate kxgui's output into the appropriate
+system-specific memory management and draw calls.
+
+
 kxgui is an immediate mode gui library inspired by libraries like [clay](https://github.com/nicbarker/clay) and [dear imgui](https://github.com/ocornut/imgui).
-when using an immediate mode library, your loop needs to call functions for drawing components every frame.
+when using an immediate mode library, you do NOT create a tree-like data structure and populate it with nodes representing GUI elements, as you would in a retain mode gui system.
+instead, the program's main loop call functions for drawing GUI components on every frame.
 
 ```
 .. in your main rendering loop ..
@@ -15,34 +24,16 @@ kxgui_label("hello world")
 ...
 ```
 
-this kind of pattern makes for very fast iteration times for development.
-it's also extremely easy to create ui that responds to the programs state,
-because gui commands can be skipped by if-else conditional branching or
-duplicated by any kind of loop. you can also write functions that contain
-calls to kxgui component functions to build interfaces. you can also create
-your own kxgui components using a special api.
+the two essential elements of any GUI built using kxgui are
+components and containers. containers are also components
+but their behavior varies from all other components in that
+they can "contain" other components and in turn, containers.
 
-# rendering / wrapping
-kxgui by itself is missing a few of the things required to be usable. 
-you will need to either find or create a renderer as well as some kind of user input wrapping.
+```
+kxgui_begin_container()
+	kxgui_label("inside the container")
+kxgui_end_container()
 
-i'm currently working on a renderer and input wrapping for sokol which i will include in this repo.
-
-# using
-
-once you have the renderer and the input wrapping, you just need a struct kxgui_context
-and to call kxgui_begin_frame()
-
-then you just issue components by calling their associated functions.
-some stateful components require you to maintain a static struct in your own memory scope.
-this is because kxgui strives not to ever allocate or perform significant memory management under the hood.
-
-kxgui will lay out all of your components, respecting the size of the screen as well as each component and container.
-it allows for containers within containers within containers within container (and so on) and all of these can be scrollable.
-
-then use your renderer to render the output of kxgui
-
-# how?
-
-i will work on some slight documentation but the header files are supposed to be self documenting
+kxgui_label("outside the container")
+```
 

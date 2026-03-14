@@ -21,7 +21,7 @@ typedef struct  {
 
 static void kxgui_textfield(textfield_t * tf) {
   
-  GET_KXGUICTX();
+  KXGUI_GETCTX();
   
   /* initialization */
   if (!tf->num_lines) {
@@ -51,7 +51,7 @@ static void kxgui_textfield(textfield_t * tf) {
           const fvec2 uv_offset = {col * glyph_size.x, row * glyph_size.y};
           kxgui_z(0.9);
           kxgui_rect(j * KXGUI_CHAR_W * text_scale.x, i * KXGUI_CHAR_H * text_scale.y, KXGUI_CHAR_W * text_scale.x, KXGUI_CHAR_H * text_scale.y);
-          kxgui_fill_texture(1, glyph_size, uv_offset);
+          kxgui_fill_texture(1, 0, glyph_size, uv_offset);
       }
 
       if (tf->focused && tf->cursor_y == i)

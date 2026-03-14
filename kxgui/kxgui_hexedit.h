@@ -38,7 +38,7 @@ char *hexconvertbyte[256] = {
 
 static void kxgui_hexedit(kxgui_hexedit_t * hexedit)
 {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
     
     int row_length = hexedit->row_length;
     int focused = hexedit->focused;
@@ -67,7 +67,7 @@ static void kxgui_hexedit(kxgui_hexedit_t * hexedit)
         const fvec2 uv_offset = {col * glyph_size.x, row * glyph_size.y};
         kxgui_z(0.9);
         kxgui_rect((i_col*3 + j) * KXGUI_CHAR_W * text_scale.x, i_row * KXGUI_CHAR_H * text_scale.y, KXGUI_CHAR_W * text_scale.x, KXGUI_CHAR_H * text_scale.y);
-        kxgui_fill_texture(1, glyph_size, uv_offset);
+        kxgui_fill_texture(1, 0, glyph_size, uv_offset);
         if (focused && cursor_i == i && cursor_cell == j) {
           kxgui_z(0.5);
           kxgui_rect((i_col*3 + j) * KXGUI_CHAR_W * text_scale.x, i_row * KXGUI_CHAR_H * text_scale.y, KXGUI_CHAR_W * text_scale.x, KXGUI_CHAR_H * text_scale.y);

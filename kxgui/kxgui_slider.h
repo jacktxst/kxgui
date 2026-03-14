@@ -9,7 +9,7 @@
 
 static void kxgui_slider_float(float * value, float min, float max) {
 
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
     
     float thumb_width = 32;
     float slider_height = 32;

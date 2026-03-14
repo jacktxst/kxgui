@@ -21,12 +21,12 @@ void kxgui_text(char * text, u32 len) {
         const fvec2 glyph_size = {1.0 / KXGUI_FONT_COLS, 1.0 / KXGUI_FONT_ROWS};
         const fvec2 uv_offset = {col * glyph_size.x, row * glyph_size.y};
         kxgui_rect(i * KXGUI_CHAR_W * text_scale.x, 0, KXGUI_CHAR_W * text_scale.x, KXGUI_CHAR_H * text_scale.y);
-        kxgui_fill_texture(1, glyph_size, uv_offset);
+        kxgui_fill_texture(1, 0, glyph_size, uv_offset);
     }
 }
 
 u8 kxgui_button_once(char * text){
-    GET_KXGUICTX()
+    KXGUI_GETCTX()
     const u32 len = strlen(text);
     const fvec4 bg_color = {0,0.5,0.4,1.0};
     const fvec4 bg_color_hover = {0.7, 0.7, 0.7, 1.0};

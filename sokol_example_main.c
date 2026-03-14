@@ -118,7 +118,7 @@ void frame() {
     }
     
     /* gui */
-    static kxgui_context ctx;
+    static kxgui_context ctx = {0};
     ctx.padding = 15;
     ctx.mouse_down = kx_input.mouse_down;
     ctx.mouse_released = kx_input.mouse_released;
@@ -127,17 +127,11 @@ void frame() {
     ctx.keys = kx_input.keys;
     ctx.typed_char = (i8)kx_input.typed_char;
     ctx.mouse_position = kx_input.mouse_pos;
+    ctx.screen_size = FVEC2(sapp_widthf(), sapp_heightf());
     
     kxgui_begin_frame
     (
-        &ctx,
-        (kxgui_context_desc)
-        {
-            .scale = FVEC2(1.0f, 1.0f),
-            .screen_size = FVEC2(sapp_widthf(), sapp_heightf()),
-            .input_flags = 0,
-            .mouse_pos = kx_input.mouse_pos
-        }
+        &ctx
     );
     
     kx_input.mouse_scroll = (fvec2){0};

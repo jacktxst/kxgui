@@ -12,7 +12,7 @@ const fvec2 text_scale = {2,4};
 
 static void kxgui_label(const char * text)
 {
-    GET_KXGUICTX()
+    KXGUI_GETCTX()
     const u32 len = strlen(text);
     kxgui_begin_component((fvec2){len * KXGUI_CHAR_W * text_scale.x, KXGUI_CHAR_H * text_scale.y});
     for (int i = 0; i < len; i++)
@@ -23,7 +23,7 @@ static void kxgui_label(const char * text)
         const fvec2 glyph_size = {1.0 / KXGUI_FONT_COLS, 1.0 / KXGUI_FONT_ROWS};
         const fvec2 uv_offset = {col * glyph_size.x, row * glyph_size.y};
         kxgui_rect(i * KXGUI_CHAR_W * text_scale.x, 0, KXGUI_CHAR_W * text_scale.x, KXGUI_CHAR_H * text_scale.y);
-        kxgui_fill_texture(1, glyph_size, uv_offset);
+        kxgui_fill_texture(1, 0, glyph_size, uv_offset);
     }
     kxgui_end_component();
 }

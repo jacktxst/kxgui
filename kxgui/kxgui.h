@@ -111,6 +111,26 @@
 // 9 - rectangle borders
 // A - seems like we need to track z
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #ifndef KXGUI_H
 #define KXGUI_H
 
@@ -200,10 +220,9 @@ typedef struct
     // tracks the height of the tallest element in a line
     // so that the cursor is moved down by an appropriate
     // amount on the next new line.
-   f32 padding;
-   fvec2 screen_size;
+   
    ivec2 _cursor; // 
-   fvec2 scale;
+   
    ivec2 _next_cursor;
    struct kxgui_rect _parent_window;
    struct kxgui_rect _clip;
@@ -211,12 +230,6 @@ typedef struct
    f32 _z;
 
    u32 _container_flags;
-    
-   fvec2 mouse_position;
-   fvec2 mouse_scroll;
-   u8 mouse_pressed;
-   u8 mouse_released;
-   u8 mouse_down;
     
    struct 
    {
@@ -234,33 +247,26 @@ typedef struct
    } 
    _render_output;
 
+   /* public */
+   f32 padding;
+   fvec2 screen_size;
+   fvec2 scale;
+   fvec2 mouse_position;
+   fvec2 mouse_scroll;
+   u8 mouse_pressed;
+   u8 mouse_released;
+   u8 mouse_down;
    char typed_char;
    u8 * keys;
+
 } 
 kxgui_context;
 
-typedef struct
-{
-    fvec2 screen_size;
-    fvec2 scale;
-    fvec2 mouse_pos;
-    u32   input_flags;
-}
-kxgui_context_desc;
-
 static kxgui_context * _kxgui_active_ctx = 0;
-#define GET_KXGUICTX() kxgui_context * ctx = _kxgui_active_ctx;
 
 #define KXGUI_GETCTX() kxgui_context * ctx = _kxgui_active_ctx;
 
-static void kxgui_container_flags(u32 flags) {
-    KXGUI_GETCTX()
-    ctx->_container_flags = flags;
-}
-
-
-
-static void kxgui_init()
+static void kxgui_init_context()
 {
     KXGUI_GETCTX()
     ctx->_stack.base = malloc(sizeof(kxgui_stackframe) * 64);
@@ -269,30 +275,46 @@ static void kxgui_init()
     ctx->_render_output.capacity = 8192;
 }
 
-static void kxgui_begin_frame(kxgui_context * ctx, kxgui_context_desc desc)
+static void kxgui_begin_frame(kxgui_context * ctx)
 {
     _kxgui_active_ctx = ctx;
     /* allocate stuff if not allocated */
     if (!ctx->_stack.base || !ctx->_render_output.commands)
     {
-        kxgui_init();
+        kxgui_init_context();
     }
+
     ctx->_stack.i = 0;
     ctx->_z = 0.5;
-    ctx->_container_flags = 0;
     ctx->_render_output.n = 0;
-    ctx->screen_size = desc.screen_size;
     ctx->_cursor = (ivec2){ctx->padding, ctx->padding};
-    ctx->_clip = (struct kxgui_rect){0, 0, desc.screen_size.x, desc.screen_size.y};
-    ctx->_parent_window = (struct kxgui_rect){0, 0, desc.screen_size.x, desc.screen_size.y};
+    ctx->_clip = (struct kxgui_rect){0, 0, ctx->screen_size.x, ctx->screen_size.y};
+    ctx->_parent_window = (struct kxgui_rect){0, 0, ctx->screen_size.x, ctx->screen_size.y};
     ctx->_tallest = 0;
 }
 
-/* input api */
+/* component input api 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
 
 static fvec2 kxgui_mouse_position()
 {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
 
     if
     (
@@ -310,7 +332,7 @@ static fvec2 kxgui_mouse_position()
     };
 }
 static int kxgui_mouse_inside(f32 x, f32 y, f32 width, f32 height) {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
     fvec2 mouse_position = kxgui_mouse_position();
     if
     (
@@ -326,15 +348,15 @@ static int kxgui_mouse_pressed();
 static int kxgui_mouse_held();
 static int kxgui_mouse_released();
 
-/* container api */
-
-typedef enum {KXGUI_CONTAINER_NORMAL} kxgui_container_type;
 
 static inline float kx_min(float a, float b) { return a < b ? a : b; }
 static inline float kx_max(float a, float b) { return a > b ? a : b; }
 
-static struct kxgui_rect kxgui_intersect_rects(struct kxgui_rect a,
-                                               struct kxgui_rect b)
+/* returns the rectangle that is the intersection of rectangles a and b 
+
+
+*/
+static struct kxgui_rect kxgui_intersect_rects (struct kxgui_rect a, struct kxgui_rect b)
 {
     float x1 = kx_max(a.x, b.x);
     float y1 = kx_max(a.y, b.y);
@@ -354,10 +376,28 @@ static struct kxgui_rect kxgui_intersect_rects(struct kxgui_rect a,
     };
 }
 
+/* component draw api */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 static void kxgui_rect        ( const f32 x, const f32 y, const f32 width, const f32 height )
 { 
-    GET_KXGUICTX(); 
+    KXGUI_GETCTX(); 
     ctx->_rect =
     (struct kxgui_rect)
     {
@@ -369,12 +409,12 @@ static void kxgui_rect        ( const f32 x, const f32 y, const f32 width, const
 }
 static void kxgui_z           ( f32 z ) 
 { 
-    GET_KXGUICTX(); 
+    KXGUI_GETCTX(); 
     ctx->_z = z;
 }
 static void kxgui_fill_color  ( fvec4 color )
 {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
     ctx->_render_output.commands[ctx->_render_output.n++] =
     (struct kxgui_render_cmd)
     {
@@ -385,9 +425,9 @@ static void kxgui_fill_color  ( fvec4 color )
     };
 };
 
-static void kxgui_fill_texture( const u32 texture, fvec2 uv_scale, fvec2 uv_offset )
+static void kxgui_fill_texture( const u32 texture, const u32 slice, fvec2 uv_scale, fvec2 uv_offset )
 {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
     ctx->_render_output.commands[ctx->_render_output.n++] =
     (struct kxgui_render_cmd)
     {
@@ -399,8 +439,6 @@ static void kxgui_fill_texture( const u32 texture, fvec2 uv_scale, fvec2 uv_offs
         .uv_offset = uv_offset
     };
 }
-
-/* component api */
 
 static void kxgui_newline() 
 {
@@ -422,16 +460,13 @@ static void kxgui_begin_component( const fvec2 size )
      */
     if (next_cursor_x > ctx->_parent_window.width) 
     {
-        /* newline / wrap */
         kxgui_newline();
         next_cursor_x = size.x + ctx->padding * 2;
     }
-    /* update row height */
     if (size.y > ctx->_tallest) 
     {
         ctx->_tallest = size.y;
     }
-    /* update next cursor */
     ctx->_next_cursor.x = next_cursor_x;
     ctx->_next_cursor.y = ctx->_cursor.y;
 }
@@ -441,6 +476,32 @@ static void kxgui_end_component()
     KXGUI_GETCTX();
     ctx->_cursor = ctx->_next_cursor;
 }
+
+/* 
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ * ============================================================================
+ * 
+ * CCC  OOO  N   N TTTTT  AAA  I  N  N  EEEE  R       SS 
+ * C    O O  NN  N   T    A A  I  NN N  E  E  R RR   S  
+ * C    O O  N N N   T    AAA  I  N NN  EEEE  RR  R   SS
+ * CCC  OOO  N  NN   T    A A     N  N  E     R         S
+ *           N   N                       EEE  R       SS
+ * ============================================================================
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ * 
+ */
 
 #define KXGUI_CONTAINER_FLOATING 1
 // 
@@ -454,7 +515,7 @@ static void kxgui_end_component()
  */
 static void kxgui_begin_container(kxgui_container * container) 
 {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
 
     fvec2 * external = &(container->external);
     fvec2 * internal = &(container->internal);
@@ -499,8 +560,6 @@ static void kxgui_begin_container(kxgui_container * container)
     
     /* composite clip rect */
 
-    
-    
     ctx->_clip = kxgui_intersect_rects(ctx->_clip, (struct kxgui_rect){ctx->_parent_window.x+ctx->_cursor.x, ctx->_parent_window.y+ctx->_cursor.y, external->x, external->y});
 
     ctx->_parent_window = 
@@ -517,13 +576,9 @@ static void kxgui_begin_container(kxgui_container * container)
     
 }
 
-/*
- *
- */
-
 static void kxgui_end_container()
 {
-    GET_KXGUICTX();
+    KXGUI_GETCTX();
     if (ctx->_stack.i < 1) {printf("stack underflow\n"); exit(0);}
     ctx->_stack.i--;
     
@@ -573,13 +628,35 @@ static void kxgui_end_container()
     kxgui_end_component();
 }
 
+/* 
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ * 
+ *
+ *
+ *
+ *
+ *
+ */
+
 static void kxgui_example_component(const ivec2 size, const fvec4 color) {
     kxgui_begin_component((fvec2){size.x,size.y});
 
     kxgui_rect(0, 0, size.x, size.y);
 
     if (kxgui_mouse_inside(0, 0 , size.x, size.y)) {
-        kxgui_fill_texture(1, (fvec2){1,1},(fvec2){0,0});
+        kxgui_fill_texture(1, 0, (fvec2){1,1},(fvec2){0,0});
     }
     else kxgui_fill_color(color);
     
