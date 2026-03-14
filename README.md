@@ -1,7 +1,7 @@
 # kxgui
 cross platform, any graphical backend, immediate mode gui c header library
 
-[click on this link to see a live demo of kxgui running in your browser thanks to WebAssembly](https://jacktxst.github.com/kxgui/wasm-demo)
+[click on this link to see a live demo of kxgui running in your browser thanks to WebAssembly](https://jacktxst.github.io/kxgui/wasm-demo)
 
 kxgui is a C library for adding GUIs to any application on any platform.
 kxgui itself relies on no libraries or graphics api. to actually get the
