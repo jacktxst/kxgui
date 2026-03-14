@@ -115,7 +115,7 @@
 // - add borders
 // - add gradient rectangles
 
-
+/*
                                                                                                                                          
                                                         .                                                                                
                                                        ...                                                                               
@@ -192,6 +192,8 @@
 ....................................................::::::::::::::::::::::::::::::::.....................................................
 ....................................................:::::::::::::::::::::::::::::::::....................................................
 
+*/
+
 #ifndef KXGUI_H
 #define KXGUI_H
 
@@ -220,6 +222,8 @@ struct kxgui_rect
     f32 x, y, width, height;
 };
 
+static struct kxgui_rect kxgui_intersect_rects(struct kxgui_rect, struct kxgui_rect);
+
 /*  this struct represents a single element that is produced as a result of beginning a kxgui frame and
  *  drawing components. each component can create several elements of type kxgui_render_cmd. the render
  *  commands are platform-abstract simplified instructions that get fed to a renderer which is
@@ -247,6 +251,7 @@ kxgui_render_cmd;
 typedef struct
 {
     fvec4 bg_color;
+    fvec2 _drag_origin;
     fvec2 pos;      // for floating window position
     fvec2 internal; 
     fvec2 external; // the visible size of the container
@@ -572,9 +577,10 @@ static struct kxgui_rect kxgui_intersect_rects (struct kxgui_rect a, struct kxgu
     };
 }
 
-#define KXGUI_CONTAINER_FLOATING 1
+#define KXGUI_CONTAINER_FLOATING 0b1
 // 
-#define KXGUI_CONTAINER_RESIZABLE 2
+#define KXGUI_CONTAINER_RESIZABLE 0b10
+#define KXGUI_CONTAINER_ACTIVE 0b100
 
 /*  note that input for a container i.e. dragging and scrolling
  *  is not handles in this function but is instead handled in
@@ -661,6 +667,7 @@ static void kxgui_end_container()
     fvec2 * external =   & ctx->_stack.base[ctx->_stack.i].container_ptr->external;
     u32   * flags    =   & ctx->_stack.base[ctx->_stack.i].container_ptr->flags;
     fvec2 * internal =   & ctx->_stack.base[ctx->_stack.i].container_ptr->internal;
+    fvec2 * drag_origin =   & ctx->_stack.base[ctx->_stack.i].container_ptr->_drag_origin;
     fvec2 * pos =   & ctx->_stack.base[ctx->_stack.i].container_ptr->pos;
 
     u8 floating = *flags & KXGUI_CONTAINER_FLOATING;
@@ -670,6 +677,7 @@ static void kxgui_end_container()
         ctx->_cursor = (ivec2){pos->x, pos->y};
     }
     
+    // scroll, which is a ptr, will always be true/non-null i think?
     if (scroll && kxgui_mouse_inside(0, 0, external->x, external->y)) {
         /* show scroll bars */
         float scroll_height = external->y / internal->y * external->y;
@@ -687,9 +695,23 @@ static void kxgui_end_container()
         scroll->y = scroll->y > internal->y ? internal->y : scroll->y;
         ctx->mouse_scroll.x = 0;
         ctx->mouse_scroll.y = 0;
+        if (ctx->mouse_pressed && floating) {
+            *flags = *flags | KXGUI_CONTAINER_ACTIVE;
+            *drag_origin = kxgui_mouse_position();
+        }
+    }
+    
+    if (!ctx->mouse_down && (*flags & KXGUI_CONTAINER_ACTIVE)) {
+        *flags = *flags ^ KXGUI_CONTAINER_ACTIVE; // deactivate
     }
 
     if (floating) {
+        if (*flags & KXGUI_CONTAINER_ACTIVE) {
+            fvec2 m = kxgui_mouse_position();
+            pos->x += m.x - drag_origin->x;
+            pos->y += m.y - drag_origin->y;
+            *drag_origin = (fvec2){pos->x, pos->y};
+        }
         ctx->_cursor = sto_cursor;
         ctx->_next_cursor = ctx->_cursor;
     }

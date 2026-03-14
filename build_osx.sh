@@ -1,0 +1,1 @@
+clang -ObjC sokol_example_main.c -I . -I kxcore -I kxgui -I sokol -framework Cocoa -framework Metal -framework AudioToolbox -framework MetalKit -framework QuartzCore -framework CoreGraphics -framework Foundation -D SOKOL_METAL -D SOKOL_IMPL -o osx/app
