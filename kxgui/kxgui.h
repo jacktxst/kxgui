@@ -1,6 +1,6 @@
 /* kxgui core v0.9
  * last modified
- * mar 13 2026
+ * mar 14 2026
  * 
  * hello, welcome to my imgui library. i began passionately working on
  * this thing in nov. 2025. i took a bit of inspiration from, and would
@@ -97,6 +97,8 @@
 // todo list of DOOM
 
 // - finish floating windows
+// - fix: if a window gets wrapped, it becomes funky
+//       scroll bar and input zone are in the wrong place
 // - fix: stuff can show / receive input through floating windows
 // - fix: z layer issues
 //       maybe: add a tiny amount of z after each component
@@ -697,7 +699,7 @@ static void kxgui_end_container()
         ctx->mouse_scroll.y = 0;
         if (ctx->mouse_pressed && floating) {
             *flags = *flags | KXGUI_CONTAINER_ACTIVE;
-            *drag_origin = kxgui_mouse_position();
+            *drag_origin = (fvec2){ctx->mouse_position.x,ctx->mouse_position.y};
         }
     }
     
@@ -707,10 +709,10 @@ static void kxgui_end_container()
 
     if (floating) {
         if (*flags & KXGUI_CONTAINER_ACTIVE) {
-            fvec2 m = kxgui_mouse_position();
+            fvec2 m = (fvec2){ctx->mouse_position.x,ctx->mouse_position.y};
             pos->x += m.x - drag_origin->x;
             pos->y += m.y - drag_origin->y;
-            *drag_origin = (fvec2){pos->x, pos->y};
+            *drag_origin = m;
         }
         ctx->_cursor = sto_cursor;
         ctx->_next_cursor = ctx->_cursor;

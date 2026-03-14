@@ -139,6 +139,8 @@ void frame() {
     kxgui_begin_frame(&ctx);
     
     kx_input.mouse_scroll = (fvec2){0};
+    kx_input.mouse_pressed = 0;
+    kx_input.mouse_released = 0;
     kx_input.typed_char = 0;
 
     /* RANDOM BOXES TEST GUI */
@@ -151,20 +153,21 @@ void frame() {
     kxgui_example_component((ivec2){50,100},(fvec4){0.0, 1.0, 0.0, 1.0});
     
     static kxgui_container container1 = {
-        .external = (fvec2){200,100},
-        .internal = (fvec2){200,500},
+        .external = (fvec2){300,100},
+        .internal = (fvec2){300,500},
         .bg_color = (fvec4){0.0, 1.0, 1.0, 1.0},
+        .flags = KXGUI_CONTAINER_FLOATING
     };
     
     kxgui_begin_container(&container1);
+        kxgui_label("drag this container");
         kxgui_example_component((ivec2){25,30},(fvec4){0.0, 0.5, 1.0, 1.0});
         kxgui_example_component((ivec2){30,25},(fvec4){1.0, 1.0, 0.0, 1.0});
     
         static kxgui_container container2 = {
             .external = (fvec2){100,100},
             .internal = (fvec2){100,500},
-            .bg_color = (fvec4){0.0, 1.0, 0.0, 1.0},
-            .flags = KXGUI_CONTAINER_FLOATING
+            .bg_color = (fvec4){0.0, 1.0, 0.0, 1.0}
         };
     
         kxgui_begin_container(&container2);
@@ -176,8 +179,7 @@ void frame() {
         kxgui_end_container();
         kxgui_example_component((ivec2){30,25},(fvec4){1.0, 1.0, 0.0, 1.0}); 
     kxgui_end_container();
-    kxgui_example_component((ivec2){50,25},(fvec4){1.0, 1.0, 1.0, 1.0});
-    
+    kxgui_example_component((ivec2){50,25},(fvec4){1.0, 1.0, 1.0, 1.0});    
     
     char fps_strbuf[16];
     sprintf(fps_strbuf, "fps %5llu", (unsigned long long)kx_time.fps);
@@ -192,8 +194,6 @@ void frame() {
     
     kxgui_button_once("hiii");
 
-    
-    
     kxgui_sokol_draw_pass(&ctx);
     
     sg_commit();
