@@ -44,8 +44,6 @@ const fvec3 FVEC3_ZERO = {0,0,0};
 #define IVEC2(a, b) (ivec2){a, b}
 #endif
 
-
-
 fvec2 fvec2_add(fvec2 a, fvec2 b);
 fvec2 fvec2_sub(fvec2 a, fvec2 b);
 fvec2 fvec2_multiply(fvec2 a, fvec2 b);
@@ -62,13 +60,15 @@ typedef float mat4[16];
 typedef struct {float r, g, b, a; } fcolor_rgba;
 
 
-typedef struct {
+typedef struct
+{
     fvec3 pos;
     fvec3 rot;
     float fov;
     float aspect;
     float near, far;
-} camera;
+}
+camera;
 
 static void mat4Identity(mat4 dest) {
     const static float m[16] = {

@@ -45,6 +45,7 @@ u8 kxgui_button_once(char * text){
         kxgui_z(0.5);
         kxgui_text(text, len);
     kxgui_end_component();
+    return 0;
 }
 
 #endif //KXGUI_BUTTON_H

@@ -1,0 +1,1 @@
+./sokol-shdc -i main -o out.h --slang metal_macos:glsl300es

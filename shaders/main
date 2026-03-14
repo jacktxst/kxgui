@@ -1,0 +1,52 @@
+@vs vs
+in vec3 position;
+in vec4 color;
+in vec2 uv;
+in float textured;      // 0.0 = untextured, 1.0 = regular 2D, 2.0 = texture array
+in float tex_slice;     // slice index for texture arrays
+
+out vec4 frag_color0;
+out float frag_textured;
+out vec2 frag_uv;
+out float frag_tex_slice;
+
+void main() {
+    gl_Position = vec4(position, 1.0);
+    frag_color0 = color;
+    frag_textured = textured;
+    frag_uv = uv;
+    frag_tex_slice = tex_slice;
+}
+@end
+
+@fs fs
+
+in vec4 frag_color0;
+in float frag_textured;
+in vec2 frag_uv;
+in float frag_tex_slice;
+
+out vec4 frag_color;
+
+layout(binding=0) uniform texture2D tex2d;
+layout(binding=1) uniform sampler smp;
+layout(binding=2) uniform texture2DArray tex_array;
+
+void main() {
+    if (frag_textured > 1.5) {
+        // texture array path
+        vec3 uvw = vec3(frag_uv, frag_tex_slice);
+        vec4 tex_color = texture(sampler2DArray(tex_array, smp), uvw);
+        frag_color = tex_color * frag_color0;
+    } else if (frag_textured > 0.5) {
+        // regular 2D texture path
+        vec4 tex_color = texture(sampler2D(tex2d, smp), frag_uv);
+        frag_color = tex_color * frag_color0;
+    } else {
+        // untextured solid color
+        frag_color = frag_color0;
+    }
+}
+@end
+
+@program triangle vs fs

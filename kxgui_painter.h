@@ -2,6 +2,8 @@
 // Created by jack lewis on 1/22/26.
 //
 
+// this is the implementation of a very rudimentary pixel image editor 
+
 #ifndef KXGUI_PAINTER_H
 #define KXGUI_PAINTER_H
 

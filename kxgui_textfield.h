@@ -9,14 +9,14 @@
 #include "kxgui_font.h"
 
 typedef struct  {
+  unsigned num_lines;
   char ** lines;
   unsigned * lengths;
   unsigned longest;
-  unsigned num_lines;
   int cursor_x;
   int cursor_y;
-  int focused;
-  ivec2 rect;
+  u8 focused;
+  ivec2 rect; // unused?
 } textfield_t;
 
 static void kxgui_textfield(textfield_t * tf) {
@@ -33,17 +33,17 @@ static void kxgui_textfield(textfield_t * tf) {
     tf->num_lines = 1;
   }
 
-  /* rendering */
-  fvec2 textfield_size = {tf->longest * KXGUI_CHAR_W * text_scale.x, tf->num_lines * KXGUI_CHAR_H * text_scale.x};
+  /* rendering - pretty solid */
+  fvec2 textfield_size = {tf->longest * KXGUI_CHAR_W * text_scale.x, tf->num_lines * KXGUI_CHAR_H * text_scale.y};
 
   kxgui_begin_component(textfield_size);
 
   for (int i = 0; i < tf->num_lines; i++) {
-      
-      
+    
       u32 len = strlen(tf->lines[i]);
       for (int j = 0; j < len; j++)
       {
+          /* put char */
           const u32 glyph_index = tf->lines[i][j] - 32;
           const u32 col = glyph_index % KXGUI_FONT_COLS;
           const u32 row = glyph_index / KXGUI_FONT_COLS;
@@ -54,18 +54,16 @@ static void kxgui_textfield(textfield_t * tf) {
           kxgui_fill_texture(1, glyph_size, uv_offset);
       }
 
-    if (tf->focused && tf->cursor_y == i)
-    {
-      kxgui_z(0.5);
-      kxgui_rect(tf->cursor_x * KXGUI_CHAR_W * text_scale.x, tf->cursor_y * KXGUI_CHAR_H * text_scale.y, 15, KXGUI_CHAR_H * text_scale.y);
-      kxgui_fill_color((fvec4){1.0,1.0,1.0,1.0});
-    }
+      if (tf->focused && tf->cursor_y == i)
+      {
+          kxgui_z(0.5);
+          kxgui_rect(tf->cursor_x * KXGUI_CHAR_W * text_scale.x, tf->cursor_y * KXGUI_CHAR_H * text_scale.y, 15, KXGUI_CHAR_H * text_scale.y);
+          kxgui_fill_color((fvec4){1.0,1.0,1.0,1.0});
+      }
   }
-
-  
   
   /* mouse interaction */
-  static int wasMouseClicked = 0;
+  static u8 wasMouseClicked = 0;
   if (kxgui_mouse_inside(0, 0, textfield_size.x, textfield_size.y)) {
     if (ctx->mouse_down && !wasMouseClicked) {
 
@@ -79,11 +77,12 @@ static void kxgui_textfield(textfield_t * tf) {
     wasMouseClicked = 0;
     if (ctx->mouse_down) wasMouseClicked = 1;
   } else if (ctx->mouse_down && !wasMouseClicked) {tf->focused  = 0;}
-  
+
+  if (!tf->focused) {kxgui_end_component(); return;}
   /* actions performed while focused */
-  if (!tf->focused) {kxgui_end_component(); return;};
   unsigned row = tf->cursor_y;
   unsigned col = tf->cursor_x;
+  
   unsigned length = tf->lengths[row];
   if (length > tf->longest) tf->longest = length;
   
@@ -126,6 +125,13 @@ static void kxgui_textfield(textfield_t * tf) {
       col = tf->cursor_x;
       length = tf->lengths[row];
     }
+    /* recalculate longest line */
+    u32 new_longest = 0;
+    for (u32 line_i = 0; line_i < tf->num_lines; line_i++) {
+       u32 line_len = strlen(tf->lines[line_i]);
+       new_longest = line_len > new_longest ? line_len : new_longest;
+    }
+    tf->longest = new_longest;
   }
   
   /* newline */

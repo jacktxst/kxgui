@@ -1,8 +1,11 @@
-
-/* hello, welcome to my imgui library. i began passionately working on
+/* kxgui core v0.9
+ * last modified
+ * mar 13 2026
+ * 
+ * hello, welcome to my imgui library. i began passionately working on
  * this thing in nov. 2025. i took a bit of inspiration from, and would
- * like to give kudos to, the clay library as well as "dear imnotgui."
- * i've not used either of these, and i have no idea what their apis
+ * like to give kudos to, the clay library as well as the Dear ImGui library.
+ * i've not used either of these, and i barely know what their apis
  * look like, but their popularity was certainly the source of my
  * inspiration.
  *
@@ -14,24 +17,31 @@
  * any graphical backend, whether it be OpenGL, Vulkan, or something
  * else entirely.
  *
- * on every frame, kxgui outputs an optimized list of render commands.
+ * on every frame, you issue function calls like
  * 
- *  Ex: RECTANGLE 200, 200, 400, 400, COLOR RED
+ *  kxgui_label("hello world");
+ *  if (kxgui_button("press me to quit")) quit_program();
+ *
+ * kxgui automatically does layout for these components and adapts to changing screen sizes. 
+ * at the end of a frame, kxgui outputs a list of simplified render commands.
+ * it could look something like this:
+ *      RECTANGLE 200, 200, 400, 400, COLOR RED
  *      RECTANGLE 200, 300, 4, 50, TEXTURE 0, UV SCALE 2, 2
  *
- * you will need to provide the bridge between kxgui and the rendering
- * backend of your choice. implementing this should be trivial.
- *
+ * a renderer function is necessary for converting this list into
+ * the appropriate memory management and draw calls for a specific
+ * rendering backend.
+ * 
  * i have already implemented a renderer that uses sokol_gfx.h as
  * a backend. see kxgui_sokol.h
  *
  * IMPORTANT - A NOTE ON IMMEDIATE MODE GUI - WHAT IS IT AND WHY?
  *
- *   #\ #\####\#\  #\   #####\####\  #   # #### #####
- *   # \# #\ # # #\# \  \ #\  #  #   #   # #    #
- *   #### # \# # # #  \  \# \ #  #   #   # #### ###
- *   #\ # #  # # # #   \  #  \#  #   #   #    # #
- *   # \# #### #####    \ #   ####   ##### #### #####
+ *   #  # #### #   #    ##### ####    #   # #### #####
+ *   #  # #  # # # #      #   #  #    #   # #    #
+ *   #### #  # # # #      #   #  #    #   # #### ###
+ *   #  # #  # # # #      #   #  #    #   #    # #
+ *   #  # #### #####      #   ####    ##### #### #####
  * 
  * 1 - SETTING UP A CONTEXT
  * 
@@ -95,8 +105,11 @@
 //       some way to globally keep track of a dragged element,
 //       so it can continue being dragged even when the mouse
 //       flies off of it.. very important!
+//       note to self - these objects just need to remember that theyve been clicked even when the mouse is off of them
 // 7 - container flags
 // 8 - resizable windows
+// 9 - rectangle borders
+// A - seems like we need to track z
 
 #ifndef KXGUI_H
 #define KXGUI_H
@@ -113,41 +126,83 @@
 #include "kxmath.h"
 #include <stdlib.h>
 
+/* structs */
+
+/*   these rects use a coordinate system that starts at the top left of the display
+ *   in contrast to the inverted y-axis system present in many graphics apis. they
+ *   are not normalized device coordinates, so a change by 1 represents a displacement
+ *   of 1 pixel, unless some global scale factor other than 1 is being applied.
+ */
+
 struct kxgui_rect
 {
-  f32 x, y, width, height;
+    f32 x, y, width, height;
 };
+
+/*  this struct represents a single element that is produced as a result of beginning a kxgui frame and
+ *  drawing components. each component can create several elements of type kxgui_render_cmd. the render
+ *  commands are platform-abstract simplified instructions that get fed to a renderer which is
+ *  responsible for translating them into platform specific draw calls.
+ */
 
 typedef struct kxgui_render_cmd
 {
     struct kxgui_rect rect;
-    f32 z;
     fvec4 color;
     fvec2 uv_scale;
     fvec2 uv_offset;
-    u32 texture;
+    f32 z_layer;
+    u32 texture; // a value of 0 means untextured. any other value refers to a texture that must be provided through the renderer
+    u32 texture_slice; // used to select a particular texture from a texture array
 }
 kxgui_render_cmd;
 
-typedef struct kxgui_frame
+/* since kxgui attempts to maintain as little hidden state as possible
+ * the user must manage memory for certain kinds of components and containers
+ * that need to remember changes of state between frames which may be caused by
+ * user input or animation. 
+ */
+
+typedef struct
+{
+    fvec4 bg_color;
+    fvec2 pos;      
+    fvec2 internal; 
+    fvec2 external; // the visible size of the container
+    fvec2 scroll;
+    u32   flags;
+}
+kxgui_container;
+
+/* to enable multiple nested layers of containers, kxgui internally uses a stack
+ * to allow it to isolate the rendering of the child contents of a container
+ * before restoring layout state to draw the next elements which are siblings
+ * of the container.
+ */
+
+typedef struct kxgui_stackframe
 {
     struct kxgui_rect _parent_window;
-    fvec2 * container_size_ptr;
-    fvec2 * container_internal_size_ptr;
+    kxgui_container * container_ptr;
+    
     struct kxgui_rect _clip;
     f32 _tallest;
     ivec2 _cursor;
     ivec2 _next_cursor;
-    fvec2 * container_scroll_ptr;
 }
-kxgui_frame;
+kxgui_stackframe;
+
+/* this is a store of data */
 
 typedef struct 
 {
    f32 _tallest;
+    // tracks the height of the tallest element in a line
+    // so that the cursor is moved down by an appropriate
+    // amount on the next new line.
    f32 padding;
    fvec2 screen_size;
-   ivec2 _cursor;
+   ivec2 _cursor; // 
    fvec2 scale;
    ivec2 _next_cursor;
    struct kxgui_rect _parent_window;
@@ -165,7 +220,7 @@ typedef struct
     
    struct 
    {
-       kxgui_frame * base;
+       kxgui_stackframe * base;
        u32 i;
        u32 max;
    } 
@@ -184,7 +239,14 @@ typedef struct
 } 
 kxgui_context;
 
-
+typedef struct
+{
+    fvec2 screen_size;
+    fvec2 scale;
+    fvec2 mouse_pos;
+    u32   input_flags;
+}
+kxgui_context_desc;
 
 static kxgui_context * _kxgui_active_ctx = 0;
 #define GET_KXGUICTX() kxgui_context * ctx = _kxgui_active_ctx;
@@ -196,19 +258,12 @@ static void kxgui_container_flags(u32 flags) {
     ctx->_container_flags = flags;
 }
 
-typedef struct
-{
-    fvec2 screen_size;
-    fvec2 scale;
-    fvec2 mouse_pos;
-    u32   input_flags;
-}
-kxgui_context_desc;
+
 
 static void kxgui_init()
 {
     KXGUI_GETCTX()
-    ctx->_stack.base = malloc(sizeof(kxgui_frame) * 64);
+    ctx->_stack.base = malloc(sizeof(kxgui_stackframe) * 64);
     ctx->_stack.max = 64;
     ctx->_render_output.commands = malloc(sizeof(struct kxgui_render_cmd) * 8192);
     ctx->_render_output.capacity = 8192;
@@ -326,7 +381,7 @@ static void kxgui_fill_color  ( fvec4 color )
         .color = color,
         .rect = kxgui_intersect_rects(ctx->_clip, ctx->_rect),
         .texture = 0,
-        .z = ctx->_z
+        .z_layer = ctx->_z
     };
 };
 
@@ -339,7 +394,7 @@ static void kxgui_fill_texture( const u32 texture, fvec2 uv_scale, fvec2 uv_offs
         .color = (fvec4){1.0,1.0,1.0,1.0},
         .rect = kxgui_intersect_rects(ctx->_clip, ctx->_rect),
         .texture = texture,
-        .z = ctx->_z,
+        .z_layer = ctx->_z,
         .uv_scale = uv_scale,
         .uv_offset = uv_offset
     };
@@ -355,10 +410,16 @@ static void kxgui_newline()
     ctx->_tallest   = 0;
 }
 
+// this function is nearly perfect imo, at least functionally
 static void kxgui_begin_component( const fvec2 size ) 
 {
     KXGUI_GETCTX();
     float next_cursor_x = ctx->_cursor.x + size.x + ctx->padding;
+    /* this condition is confusing.
+     * it successfully prevents a component
+     * from rendering too close to the right edge,
+     * but it's not explicit about that at all
+     */
     if (next_cursor_x > ctx->_parent_window.width) 
     {
         /* newline / wrap */
@@ -381,16 +442,16 @@ static void kxgui_end_component()
     ctx->_cursor = ctx->_next_cursor;
 }
 
-typedef struct
-{
-    fvec4 bg_color;
-    fvec2 internal;
-    fvec2 external;
-    fvec2 scroll;
-    u32   flags;
-}
-kxgui_container;
+#define KXGUI_CONTAINER_FLOATING 1
+// 
+#define KXGUI_CONTAINER_RESIZABLE 2
 
+/*  note that input for a container i.e. dragging and scrolling
+ *  is not handles in this function but is instead handled in
+ *  kxgui_end_container(). first, we need to see if any
+ *  of the children components of a container are willing to accept
+ *  the user input, so we must wait until kxgui_end_container()
+ */
 static void kxgui_begin_container(kxgui_container * container) 
 {
     GET_KXGUICTX();
@@ -401,47 +462,69 @@ static void kxgui_begin_container(kxgui_container * container)
     u32   * flags    = &(container->flags);
     fvec4 * bg_color = &(container->bg_color);
     
-    kxgui_begin_component(*external);
+    /* a container is actually just a component that gets interrupted
+     * another entire gui can render in the middle of rendering this component.
+     * all relevant state is stored on the stack while the child components
+     * are drawn, and state is restored in order for the container component
+     * to be finished up.
+     */
 
+    u8 floating = *flags & KXGUI_CONTAINER_FLOATING;
+
+    ivec2 sto_cursor = ctx->_cursor;
+    if (floating)
+    {
+        ctx->_cursor = (ivec2){container->pos.x, container->pos.y};
+    }
+
+    /* begin the container as a component */
+    
+    kxgui_begin_component(*external);
     kxgui_rect(0, 0, external->x, external->y);
     kxgui_fill_color(*bg_color);
+
+    /* store state on the stack, interrupting the component */
     
     ctx->_stack.base[ctx->_stack.i] = 
-    (kxgui_frame) 
+    (kxgui_stackframe) 
     {
-        .container_scroll_ptr = scroll,
-        .container_size_ptr = external,
-        .container_internal_size_ptr = internal,
+        .container_ptr = container,        
         ._clip = ctx->_clip,
         ._tallest = ctx->_tallest,
-        ._cursor = ctx->_cursor,
+        ._cursor = floating ? sto_cursor : ctx->_cursor,
         ._next_cursor = ctx->_next_cursor,
         ._parent_window = ctx->_parent_window,
-        
     };
-    if (++ctx->_stack.i == ctx->_stack.max) exit(0);
+    if (++ctx->_stack.i == ctx->_stack.max) {printf("stack overflow\n"); exit(0);}
     
     /* composite clip rect */
-    ctx->_clip = kxgui_intersect_rects(ctx->_clip, (struct kxgui_rect){ctx->_parent_window.x+ctx->_cursor.x, ctx->_parent_window.y+ctx->_cursor.y, external->x, external->y});
+
     
+    
+    ctx->_clip = kxgui_intersect_rects(ctx->_clip, (struct kxgui_rect){ctx->_parent_window.x+ctx->_cursor.x, ctx->_parent_window.y+ctx->_cursor.y, external->x, external->y});
+
     ctx->_parent_window = 
-    (struct kxgui_rect) 
-    {
-        ctx->_cursor.x + ctx->_parent_window.x - (scroll ? scroll->x : 0),
-        ctx->_cursor.y + ctx->_parent_window.y - (scroll ? scroll->y : 0),
-        internal->x, internal->y
-    };
+        (struct kxgui_rect) 
+        {
+            ctx->_cursor.x + ctx->_parent_window.x - (scroll ? scroll->x : 0),
+            ctx->_cursor.y + ctx->_parent_window.y - (scroll ? scroll->y : 0),
+            internal->x, internal->y
+        };
+    
     /* reset cursor */
     ctx->_cursor = IVEC2(ctx->padding, ctx->padding);
-    ctx->_container_flags = 0;
     ctx->_tallest = 0;
     
 }
 
+/*
+ *
+ */
+
 static void kxgui_end_container()
 {
     GET_KXGUICTX();
-    if (ctx->_stack.i < 1) exit(0);
+    if (ctx->_stack.i < 1) {printf("stack underflow\n"); exit(0);}
     ctx->_stack.i--;
     
     ctx->_clip =          ctx->_stack.base[ctx->_stack.i]._clip;
@@ -450,15 +533,21 @@ static void kxgui_end_container()
     ctx->_cursor =        ctx->_stack.base[ctx->_stack.i]._cursor;
     ctx->_parent_window = ctx->_stack.base[ctx->_stack.i]._parent_window;
 
-    fvec2 * scroll   =    ctx->_stack.base[ctx->_stack.i].container_scroll_ptr;
-    fvec2 * external =    ctx->_stack.base[ctx->_stack.i].container_size_ptr;
-    fvec2 * internal =    ctx->_stack.base[ctx->_stack.i].container_internal_size_ptr;
+    fvec2 * scroll   =   & ctx->_stack.base[ctx->_stack.i].container_ptr->scroll;
+    fvec2 * external =   & ctx->_stack.base[ctx->_stack.i].container_ptr->external;
+    u32   * flags    =   & ctx->_stack.base[ctx->_stack.i].container_ptr->flags;
+    fvec2 * internal =   & ctx->_stack.base[ctx->_stack.i].container_ptr->internal;
+    fvec2 * pos =   & ctx->_stack.base[ctx->_stack.i].container_ptr->pos;
 
+    u8 floating = *flags & KXGUI_CONTAINER_FLOATING;
 
+    ivec2 sto_cursor = ctx->_cursor;
+    if (floating) {
+        ctx->_cursor = (ivec2){pos->x, pos->y};
+    }
+    
     if (scroll && kxgui_mouse_inside(0, 0, external->x, external->y)) {
         /* show scroll bars */
-
-        
         float scroll_height = external->y / internal->y * external->y;
         kxgui_rect
         (
@@ -468,19 +557,20 @@ static void kxgui_end_container()
             scroll_height
         );
         kxgui_fill_color((fvec4){1.0, 0.0, 1.0, 1.0});
-        
         scroll->x += ctx->mouse_scroll.x;
         scroll->y += ctx->mouse_scroll.y;
-
         scroll->y = scroll->y < 0 ? 0 : scroll->y;
         scroll->y = scroll->y > internal->y ? internal->y : scroll->y;
-        
         ctx->mouse_scroll.x = 0;
         ctx->mouse_scroll.y = 0;
     }
 
-    kxgui_end_component();
+    if (floating) {
+        ctx->_cursor = sto_cursor;
+        ctx->_next_cursor = ctx->_cursor;
+    }
     
+    kxgui_end_component();
 }
 
 static void kxgui_example_component(const ivec2 size, const fvec4 color) {

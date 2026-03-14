@@ -17,6 +17,7 @@
 	typedef int64_t  i64;
 	typedef float    f32;
 	typedef enum     { X, Y, Z } Axis;
+	typedef enum     { CARDINAL_MINUS_X, CARDINAL_MINUS_Y, CARDINAL_MINUS_Z, CARDINAL_PLUS_X, CARDINAL_PLUS_Y, CARDINAL_PLUS_Z } CardinalDirection;
 
 #endif
 
@@ -52,6 +53,7 @@ fvec2 fvec2_normalize(fvec2 a);
 /* color */
 
 typedef struct {u8 r, g, b, a;} color;
+typedef struct {f32 r, g, b, a;} gl_color;
 
 color Color(u32 color);
 
@@ -69,7 +71,12 @@ const color YELLOW   = {255, 255, 0,   255};
 typedef struct { 
 	u32 height, width;
 	u32 * pixels;
-} Bitmap32; 
+} Bitmap32;
+
+typedef struct { 
+	u32 height, width, num_slices;
+	u32 * pixels;
+} Bitmap32_Array; 
 
 void Bitmap32_Blit();
 void Bitmap32_Crop();
@@ -96,7 +103,7 @@ void  BitmaskInvert(Bitmask mask);
 typedef struct {} NoiseSettings;
 void GenNoisemap(Bitmap32 dest, Rectangle rect, NoiseSettings settings);
 typedef struct { } BitmapFont;
-Boolean GetThreshholdMask(Bitmask mask, Bitmap32 map, u8 value);
+u8 GetThreshholdMask(Bitmask mask, Bitmap32 map, u8 value);
 
 /* matrices */
 
@@ -136,19 +143,27 @@ typedef struct {
 
 typedef struct {
 	Vertex * data;
-	size_t length;
+	size_t count;
 	size_t capacity;
 } VertexList;
 
+void VertexList_push(VertexList * list, Vertex v) {
+	if (list->count == list->capacity) {
+		list->capacity *= 2;
+		list->data = realloc(list->data, sizeof(Vertex) * list->capacity);
+	}
+	list->data[list->count++] = v;
+}
+
 typedef struct {
 	u32 * data;
-	size_t length;
+	size_t count;
 	size_t capacity;
-} u32_List;
+} u32_DynamicArray;
 
 typedef struct {
 	VertexList verts;
-	u32_List   elements;
+	u32_DynamicArray   elements;
 } MeshBasic;
 
 MeshBasic MeshBasic_New(u32 vertexCapacity, u32 elementCapacity);
@@ -228,8 +243,6 @@ i32  File_GetSize    (char * path);
 i32  File_ReadBytes  (void * buffer, u32 nBytes, char * filename, u32 offset);
 bool File_PromptSave (void * buffer, u32 nBytes, char * filenameSuggestion);
 
-
-
 /* device api */
 
 
@@ -238,21 +251,11 @@ bool File_PromptSave (void * buffer, u32 nBytes, char * filenameSuggestion);
 
 typedef u32   TextureHandle;
 
-TextureHandle Texture_Import(char *);
-TextureHandle Texture_Create();
+TextureHandle Texture_Create(Bitmap32);
 void          Texture_Destroy(TextureHandle *);
 void          Texture_Data(TextureHandle, Bitmap32);
 ivec2         Texture_GetSize(TextureHandle);
-void          Texture_SetSize(TextureHandle, ivec2);
-void          Texture_Get(TextureHandle, Bitmap32);
 
-typedef u32   TextureArrayHandle;
-
-TextureArrayHandle TextureArray_Create(uvec3);
-void			   TextureArray_Destroy();
-void			   TextureArray_SetSize(uvec3);
-void			   TextureArray_Data(uvec3);
-uvec3		       TextureArray_GetSize(uvec3);
 
 /* framebuffer api */
 
