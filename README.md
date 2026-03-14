@@ -12,7 +12,7 @@ system-specific memory management and draw calls.
 
 kxgui is an immediate mode gui library inspired by libraries like [clay](https://github.com/nicbarker/clay) and [dear imgui](https://github.com/ocornut/imgui).
 when using an immediate mode library, you do NOT create a tree-like data structure and populate it with nodes representing GUI elements, as you would in a retain mode gui system.
-instead, the program's main loop call functions for drawing GUI components on every frame.
+instead, the program's main loop calls functions for drawing GUI components on every frame.
 
 ```
 .. in your main rendering loop ..
@@ -31,11 +31,25 @@ but their behavior varies from all other components in that
 they can "contain" other components and in turn, containers.
 
 ```
+.. in your main rendering loop ..
 kxgui_begin_container()
+
+
 	kxgui_label("inside the container")
+
+
+	kxgui_begin_container()
+
+		kxgui_label("inside a container inside a container!")
+
+	kxgui_end_container()
+
+
 kxgui_end_container()
 
+
 kxgui_label("outside the container")
+...
 ```
 
 please read kxgui.h for more info
