@@ -186,7 +186,7 @@ kxgui_render_cmd;
 typedef struct
 {
     fvec4 bg_color;
-    fvec2 pos;      
+    fvec2 pos;      // for floating window position
     fvec2 internal; 
     fvec2 external; // the visible size of the container
     fvec2 scroll;
@@ -203,34 +203,44 @@ kxgui_container;
 typedef struct kxgui_stackframe
 {
     struct kxgui_rect _parent_window;
-    kxgui_container * container_ptr;
-    
     struct kxgui_rect _clip;
     f32 _tallest;
     ivec2 _cursor;
     ivec2 _next_cursor;
+
+    kxgui_container * container_ptr;
 }
 kxgui_stackframe;
 
-/* this is a store of data */
-
 typedef struct 
 {
+
+   // tracks the height of the tallest element in a line
+   // so that the cursor is moved down by an appropriate
+   // amount on the next new line.
+
    f32 _tallest;
-    // tracks the height of the tallest element in a line
-    // so that the cursor is moved down by an appropriate
-    // amount on the next new line.
-   
-   ivec2 _cursor; // 
-   
+   ivec2 _cursor; 
    ivec2 _next_cursor;
    struct kxgui_rect _parent_window;
-   struct kxgui_rect _clip;
+
+   // screen space clip rect 
+   // all drawn rects will be 
+   // clipped to the bounds
+   // of the clip rect.
+
+   struct kxgui_rect _clip; 
+
+   // hold the parameters
+   // of a currently in
+   // progress draw command.
+
    struct kxgui_rect _rect;
    f32 _z;
-
-   u32 _container_flags;
     
+   // stack allows multiple
+   // levels of containers
+
    struct 
    {
        kxgui_stackframe * base;
@@ -347,34 +357,6 @@ static int kxgui_mouse_inside(f32 x, f32 y, f32 width, f32 height) {
 static int kxgui_mouse_pressed();
 static int kxgui_mouse_held();
 static int kxgui_mouse_released();
-
-
-static inline float kx_min(float a, float b) { return a < b ? a : b; }
-static inline float kx_max(float a, float b) { return a > b ? a : b; }
-
-/* returns the rectangle that is the intersection of rectangles a and b 
-
-
-*/
-static struct kxgui_rect kxgui_intersect_rects (struct kxgui_rect a, struct kxgui_rect b)
-{
-    float x1 = kx_max(a.x, b.x);
-    float y1 = kx_max(a.y, b.y);
-
-    float x2 = kx_min(a.x + a.width,  b.x + b.width);
-    float y2 = kx_min(a.y + a.height, b.y + b.height);
-
-    if (x2 <= x1 || y2 <= y1) {
-        return (struct kxgui_rect){ 0, 0, 0, 0 };
-    }
-
-    return (struct kxgui_rect){
-        .x = x1,
-        .y = y1,
-        .width  = x2 - x1,
-        .height = y2 - y1,
-    };
-}
 
 /* component draw api */
 
@@ -502,6 +484,31 @@ static void kxgui_end_component()
  *
  * 
  */
+
+/* helpers */
+
+static inline float kx_min(float a, float b) { return a < b ? a : b; }
+static inline float kx_max(float a, float b) { return a > b ? a : b; }
+
+static struct kxgui_rect kxgui_intersect_rects (struct kxgui_rect a, struct kxgui_rect b)
+{
+    float x1 = kx_max(a.x, b.x);
+    float y1 = kx_max(a.y, b.y);
+
+    float x2 = kx_min(a.x + a.width,  b.x + b.width);
+    float y2 = kx_min(a.y + a.height, b.y + b.height);
+
+    if (x2 <= x1 || y2 <= y1) {
+        return (struct kxgui_rect){ 0, 0, 0, 0 };
+    }
+
+    return (struct kxgui_rect){
+        .x = x1,
+        .y = y1,
+        .width  = x2 - x1,
+        .height = y2 - y1,
+    };
+}
 
 #define KXGUI_CONTAINER_FLOATING 1
 // 
