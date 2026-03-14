@@ -37,3 +37,7 @@ kxgui_end_container()
 kxgui_label("outside the container")
 ```
 
+please read kxgui.h for more info
+
+[you can see a live demo of kxgui in your browser using WebAssembly by clicking on this link](https://jacktxst.github.com/kxgui/wasm-demo)
+

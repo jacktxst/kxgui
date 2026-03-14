@@ -117,6 +117,13 @@ void frame() {
         kx_time.ftimer = 0;
     }
     
+    sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = sglue_swapchain() });
+
+    sg_apply_pipeline(state.pip);
+
+    sg_end_pass();
+
+
     /* gui */
     static kxgui_context ctx = {0};
     ctx.padding = 15;
@@ -129,10 +136,7 @@ void frame() {
     ctx.mouse_position = kx_input.mouse_pos;
     ctx.screen_size = FVEC2(sapp_widthf(), sapp_heightf());
     
-    kxgui_begin_frame
-    (
-        &ctx
-    );
+    kxgui_begin_frame(&ctx);
     
     kx_input.mouse_scroll = (fvec2){0};
     kx_input.typed_char = 0;
@@ -188,11 +192,7 @@ void frame() {
     
     kxgui_button_once("hiii");
 
-    sg_begin_pass(&(sg_pass){ .action = state.pass_action, .swapchain = sglue_swapchain() });
-
-    sg_apply_pipeline(state.pip);
-
-    sg_end_pass();
+    
     
     kxgui_sokol_draw_pass(&ctx);
     
@@ -204,12 +204,6 @@ void cleanup(void) {
 }
 
 void event_cb(const sapp_event* e) {
-    
-    static int audio_started = 0;
-    if ((e->type == SAPP_EVENTTYPE_KEY_DOWN || e->type == SAPP_EVENTTYPE_MOUSE_DOWN) && !audio_started) {
-        //start_audio_on_gesture();
-        audio_started = 1;
-    }
     
     switch (e->type) {
         case SAPP_EVENTTYPE_MOUSE_MOVE:
