@@ -34,9 +34,16 @@ static void kxgui_textfield(textfield_t * tf) {
   }
 
   /* rendering - pretty solid */
+  float charw = KXGUI_CHAR_W * text_scale.x;
+  float charh = KXGUI_CHAR_H * text_scale.y;
+
   fvec2 textfield_size = {tf->longest * KXGUI_CHAR_W * text_scale.x, tf->num_lines * KXGUI_CHAR_H * text_scale.y};
+  textfield_size.x = textfield_size.x > charw ? textfield_size.x : charw;
+  textfield_size.y = textfield_size.y > charh ? textfield_size.y : charh;
+
 
   kxgui_begin_component(textfield_size);
+  printf("x: %f y: %f\n", textfield_size.x, textfield_size.y);
 
   for (int i = 0; i < tf->num_lines; i++) {
     
@@ -64,6 +71,9 @@ static void kxgui_textfield(textfield_t * tf) {
   
   /* mouse interaction */
   static u8 wasMouseClicked = 0;
+
+  
+
   if (kxgui_mouse_inside(0, 0, textfield_size.x, textfield_size.y)) {
     if (ctx->mouse_down && !wasMouseClicked) {
 

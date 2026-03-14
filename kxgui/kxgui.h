@@ -94,9 +94,9 @@
  * }
  */
 
-// todo list of DOOM
-
-// - finish floating windows
+// - todo list of DOOM
+//
+// - separate floating and draggable
 // - fix: if a window gets wrapped, it becomes funky
 //       scroll bar and input zone are in the wrong place
 // - fix: stuff can show / receive input through floating windows
@@ -224,7 +224,8 @@ struct kxgui_rect
     f32 x, y, width, height;
 };
 
-static struct kxgui_rect kxgui_intersect_rects(struct kxgui_rect, struct kxgui_rect);
+
+
 
 /*  this struct represents a single element that is produced as a result of beginning a kxgui frame and
  *  drawing components. each component can create several elements of type kxgui_render_cmd. the render
@@ -341,9 +342,51 @@ typedef struct
 } 
 kxgui_context;
 
-static kxgui_context * _kxgui_active_ctx = 0;
+
+/*
+    functions
+*/
 
 #define KXGUI_GETCTX() kxgui_context * ctx = _kxgui_active_ctx;
+static void kxgui_init_context();
+static void kxgui_begin_frame(kxgui_context * ctx);
+
+static fvec2 kxgui_mouse_position();
+static int kxgui_mouse_inside(f32 x, f32 y, f32 width, f32 height);
+
+static void kxgui_rect        ( const f32 x, const f32 y, const f32 width, const f32 height );
+static void kxgui_z           ( f32 z ) ;
+static void kxgui_fill_color  ( fvec4 color );
+static void kxgui_fill_texture( const u32 texture, const u32 slice, fvec2 uv_scale, fvec2 uv_offset );
+static void kxgui_newline() ;
+static void kxgui_begin_component( const fvec2 size ) ;
+static void kxgui_end_component() ;
+
+static inline float kx_min(float a, float b) ;
+static inline float kx_max(float a, float b) ;
+static struct kxgui_rect kxgui_intersect_rects (struct kxgui_rect a, struct kxgui_rect b);
+
+static void kxgui_end_container();
+static void kxgui_begin_container(kxgui_container * container) ;
+
+
+/*
+
+
+
+
+
+
+
+
+
+
+*/
+
+
+static kxgui_context * _kxgui_active_ctx = 0;
+
+
 
 static void kxgui_init_context()
 {
@@ -423,15 +466,8 @@ static int kxgui_mouse_inside(f32 x, f32 y, f32 width, f32 height) {
     return 1;
     return 0;
 }
-static int kxgui_mouse_pressed();
-static int kxgui_mouse_held();
-static int kxgui_mouse_released();
 
 /* component draw api */
-
-
-
-
 
 
 
@@ -590,6 +626,9 @@ static struct kxgui_rect kxgui_intersect_rects (struct kxgui_rect a, struct kxgu
  *  of the children components of a container are willing to accept
  *  the user input, so we must wait until kxgui_end_container()
  */
+
+
+
 static void kxgui_begin_container(kxgui_container * container) 
 {
     KXGUI_GETCTX();
@@ -720,6 +759,8 @@ static void kxgui_end_container()
     
     kxgui_end_component();
 }
+
+
 
 /* 
  *
